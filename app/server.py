@@ -1,6 +1,7 @@
 # server.py
 
 from flask import Flask, request, send_file, jsonify, Response
+from flask_cors import CORS
 from gevent.pywsgi import WSGIServer
 from dotenv import load_dotenv
 import os
@@ -15,6 +16,22 @@ from utils import getenv_bool, require_api_key, AUDIO_FORMAT_MIME_TYPES, DETAILE
 
 app = Flask(__name__)
 load_dotenv()
+
+# CORS configuration
+CORS_ENABLED = getenv_bool('CORS_ENABLED', True)  # Default to True for browser extension support
+CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*')  # Default to allow all origins
+
+if CORS_ENABLED:
+    # Configure CORS with flexible options
+    cors_config = {
+        "origins": CORS_ORIGINS if CORS_ORIGINS != '*' else "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
+        "expose_headers": ["Content-Type", "Content-Length"],
+        "supports_credentials": True if CORS_ORIGINS != '*' else False,
+        "max_age": 3600
+    }
+    CORS(app, resources={r"/*": cors_config})
 
 API_KEY = os.getenv('API_KEY', DEFAULT_CONFIGS["API_KEY"])
 PORT = int(os.getenv('PORT', str(DEFAULT_CONFIGS["PORT"])))

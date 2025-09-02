@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test for OpenAI Edge TTS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS Test for OpenAI Edge TTS API</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Get Models (No Auth Required)</h2>
+        <button onclick="testModels()">Test /v1/models</button>
+        <div id="models-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Get Voices (May Require API Key)</h2>
+        <input type="text" id="api-key" placeholder="Enter API Key (if required)" style="width: 300px; padding: 5px;">
+        <br><br>
+        <button onclick="testVoices()">Test /v1/voices</button>
+        <div id="voices-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Text-to-Speech</h2>
+        <textarea id="tts-text" placeholder="Enter text to convert to speech" style="width: 100%; height: 60px;">Hello, this is a test of the text-to-speech API with CORS enabled.</textarea>
+        <br><br>
+        <button onclick="testTTS()">Test TTS</button>
+        <div id="tts-result" class="result"></div>
+        <audio id="audio-player" controls style="display: none; margin-top: 10px;"></audio>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5050';
+
+        async function testModels() {
+            const resultDiv = document.getElementById('models-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_URL}/v1/models`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<span class="success">✅ CORS Test Passed!</span>\nResponse:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Request failed with status: ${response.status}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ CORS Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testVoices() {
+            const resultDiv = document.getElementById('voices-result');
+            const apiKey = document.getElementById('api-key').value;
+            resultDiv.innerHTML = 'Testing...';
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/v1/voices`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<span class="success">✅ CORS Test Passed!</span>\nResponse:\n${JSON.stringify(data, null, 2).substring(0, 500)}...`;
+                } else {
+                    const error = await response.json();
+                    resultDiv.innerHTML = `<span class="error">❌ Request failed: ${JSON.stringify(error)}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ CORS Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testTTS() {
+            const resultDiv = document.getElementById('tts-result');
+            const apiKey = document.getElementById('api-key').value;
+            const text = document.getElementById('tts-text').value;
+            const audioPlayer = document.getElementById('audio-player');
+            
+            resultDiv.innerHTML = 'Testing...';
+            audioPlayer.style.display = 'none';
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/v1/audio/speech`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        input: text,
+                        voice: 'en-US-AvaNeural',
+                        response_format: 'mp3',
+                        speed: 1.0
+                    })
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const audioUrl = URL.createObjectURL(blob);
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    resultDiv.innerHTML = `<span class="success">✅ CORS Test Passed! Audio generated successfully.</span>`;
+                } else {
+                    const error = await response.text();
+                    resultDiv.innerHTML = `<span class="error">❌ Request failed: ${error}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ CORS Error: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
