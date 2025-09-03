@@ -1,5 +1,7 @@
 # CORS Configuration Guide
 
+**Written by AI - Claude Opus 4.1 Thinking**
+
 ## 已完成的修改
 
 ### 1. **requirements.txt**
